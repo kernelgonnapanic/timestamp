@@ -4,23 +4,33 @@ const app = express();
 const months = [
   'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
   'November', 'December',
-]
+];
+
+// the task is not taking into account data about the user timezone, the calculations are done using server's timezone
+
+const calculateFromUnix = timestamp => {
+  const date = new Date(timestamp * 1000);
+  return {
+    unix: timestamp,
+    natural: `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`,
+  };
+}
+
+const calculateFromNatural = (natural, timestampFromNatural) => {
+  return {
+    natural,
+    unix: timestampFromNatural / 1000,
+  }
+}
 
 const parseParams = param => {
-  const numericParam = Number(param);
-  const decodedParam = decodeURI(param);
-  const natural = Date.parse(decodedParam);
-  if (!Number.isNaN(numericParam)) {
-    const date = new Date(numericParam * 1000);
-    return {
-      unix: numericParam,
-      natural: `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`,
-    };
-  } else if(!Number.isNaN(natural)) {
-    return {
-      natural: decodedParam,
-      unix: natural / 1000 + 3600, // FIXME: get the timezones working
-    }
+  const timestamp = Number(param);
+  const decodedNatural = decodeURI(param);
+  const timestampFromNatural = Date.parse(decodedNatural);
+  if (!Number.isNaN(timestamp) && timestamp >= 0) {
+    return calculateFromUnix(timestamp);
+  } else if(!Number.isNaN(timestampFromNatural)) {
+    return calculateFromNatural(decodedNatural, timestampFromNatural);
   }
   return {
     unix: null,
@@ -30,4 +40,4 @@ const parseParams = param => {
 
 app.get('/:param', (req, res) => res.send(parseParams(req.params.param)));
 
-app.listen(3000, () => console.log('Example app listening on port 3000!'));
+app.listen(3001, () => console.log('Example app listening on port 3001!'));
